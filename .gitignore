@@ -1,0 +1,13 @@
+# Secrets and local configuration
+/config/config.php
+.env
+
+# Uploaded receipts are personal data: never in Git
+/storage/receipts/*
+!/storage/receipts/.gitkeep
+
+# Tooling
+/vendor/
+.idea/
+.vscode/
+*.log
