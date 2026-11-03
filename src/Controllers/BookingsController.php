@@ -103,13 +103,6 @@ final class BookingsController extends Controller
             throw HttpException::validation([['field' => 'Idempotency-Key', 'issue' => 'header with a UUID is required']]);
         }
 
-        // Same key again (the app retried after a network error): return the booking already created.
-        $stmt = $this->db->prepare('SELECT booking_id FROM booking_idempotency_keys WHERE idempotency_key = :k AND player_id = :p');
-        $stmt->execute(['k' => $key, 'p' => $playerId]);
-        if ($existing = $stmt->fetchColumn()) {
-            return $this->createdResponse((int) $existing, $playerId);
-        }
-
         $body = $request->json();
         $fieldId = (int) ($body['fieldId'] ?? 0);
         $hours = (int) ($body['hours'] ?? 1);
@@ -117,6 +110,20 @@ final class BookingsController extends Controller
             $start = (new DateTimeImmutable((string) ($body['startsAt'] ?? '')))->setTimezone(new \DateTimeZone('America/Bogota'));
         } catch (Exception) {
             throw HttpException::validation([['field' => 'startsAt', 'issue' => 'must be an ISO 8601 date-time']]);
+        }
+
+        // Same key again (the app retried after a network error): return the booking already created,
+        // but only if it is the SAME request. A key reused for another field or hour is a client bug.
+        $stmt = $this->db->prepare(
+            'SELECT b.id, b.field_id, b.starts_at FROM booking_idempotency_keys k JOIN bookings b ON b.id = k.booking_id
+              WHERE k.idempotency_key = :k AND k.player_id = :p'
+        );
+        $stmt->execute(['k' => $key, 'p' => $playerId]);
+        if ($existing = $stmt->fetch()) {
+            if ((int) $existing['field_id'] !== $fieldId || $existing['starts_at'] !== $start->format('Y-m-d H:i:s')) {
+                throw new HttpException(422, 'IDEMPOTENCY_KEY_REUSED', 'This Idempotency-Key was already used for a different booking.');
+            }
+            return $this->createdResponse((int) $existing['id'], $playerId);
         }
 
         $s = $this->settings();
