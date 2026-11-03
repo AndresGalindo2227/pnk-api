@@ -86,7 +86,7 @@ final class App
             header("Access-Control-Allow-Origin: $origin");
             header('Vary: Origin');
             header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-            header('Access-Control-Allow-Headers: Authorization, Content-Type, Idempotency-Key, X-App-Version, X-Request-Id');
+            header('Access-Control-Allow-Headers: Authorization, Content-Type, Idempotency-Key, X-App-Version, X-Request-Id, ngrok-skip-browser-warning');
             header('Access-Control-Max-Age: 600');
         }
     }
