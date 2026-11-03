@@ -25,6 +25,12 @@ final class PaymentsController extends Controller
         if ($booking['status'] !== 'pending') {
             throw HttpException::conflict('PAYMENT_ALREADY_REVIEWED', 'This booking does not need a receipt.');
         }
+        // One receipt at a time: a new one is accepted only if there is none or the last was rejected.
+        $last = $this->db->prepare("SELECT status FROM payments WHERE booking_id = :b ORDER BY id DESC LIMIT 1");
+        $last->execute(['b' => $bookingId]);
+        if ($last->fetchColumn() === 'pending') {
+            throw HttpException::conflict('RECEIPT_ALREADY_SENT', 'A receipt of this booking is already waiting for review.');
+        }
 
         $file = $_FILES['photo'] ?? null;
         $amount = (int) ($_POST['amount'] ?? 0);
