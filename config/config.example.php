@@ -20,6 +20,8 @@ return [
         'http://localhost',                 // Capacitor Android (androidScheme http)
         'https://localhost',                // Capacitor Android (androidScheme https)
         'capacitor://localhost',            // Capacitor iOS
+        'https://panenka-booking.web.app',  // PWA on Firebase Hosting (use your Firebase project id)
+        'https://panenka-booking.firebaseapp.com',
     ],
     'min_app_version' => '0.1.0',
     'receipts_dir' => __DIR__ . '/../storage/receipts',
