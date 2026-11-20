@@ -29,6 +29,32 @@ final class HealthController extends Controller
             'depositPercent' => (int) $s['deposit_percent'],
             'cancellationMinHours' => (int) $s['cancellation_min_hours'],
             'maxDaysAhead' => 30,
+            'paymentAccounts' => $this->paymentAccounts(),
         ]);
+    }
+
+    /**
+     * Active accounts where the player pays the deposit (Nequi, Daviplata, bank, Bre-B key),
+     * managed by the business in InvFox (migration 014). Empty when the table does not exist yet.
+     *
+     * @return list<array{entity: string, accountType: string, number: string, holder: string, holderDocument: ?string}>
+     */
+    private function paymentAccounts(): array
+    {
+        try {
+            $rows = $this->db->query(
+                'SELECT entity, account_type, number, holder, holder_document
+                   FROM payment_accounts WHERE is_active = 1 ORDER BY id'
+            )->fetchAll();
+        } catch (\PDOException) {
+            return [];
+        }
+        return array_map(static fn (array $r): array => [
+            'entity' => $r['entity'],
+            'accountType' => $r['account_type'],
+            'number' => $r['number'],
+            'holder' => $r['holder'],
+            'holderDocument' => $r['holder_document'],
+        ], $rows);
     }
 }
