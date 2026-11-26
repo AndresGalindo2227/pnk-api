@@ -7,6 +7,7 @@ namespace Pnk;
 use Pnk\Controllers\AuthController;
 use Pnk\Controllers\BookingsController;
 use Pnk\Controllers\HealthController;
+use Pnk\Controllers\OnlinePaymentsController;
 use Pnk\Controllers\PaymentsController;
 use Pnk\Http\HttpException;
 use Pnk\Http\Request;
@@ -60,6 +61,7 @@ final class App
         $auth = new AuthController($db, $jwt, $config, $tokens);
         $bookings = new BookingsController($db, $jwt, $config);
         $payments = new PaymentsController($db, $jwt, $config);
+        $online = new OnlinePaymentsController($db, $jwt, $config);
 
         $r = new Router();
         $r->add('GET', '/health', [$health, 'health']);
@@ -76,6 +78,10 @@ final class App
         $r->add('GET', '/bookings/{id}', [$bookings, 'show']);
         $r->add('POST', '/bookings/{id}/cancel', [$bookings, 'cancel']);
         $r->add('POST', '/bookings/{id}/payments/receipt', [$payments, 'uploadReceipt']);
+        $r->add('POST', '/bookings/{id}/payments/online', [$online, 'start']);
+        $r->add('POST', '/bookings/{id}/payments/online/check', [$online, 'check']);
+        $r->add('POST', '/webhooks/wompi', [$online, 'webhook']);
+        $r->add('GET', '/payments/wompi/return', [$online, 'returnPage']);
         return $r;
     }
 

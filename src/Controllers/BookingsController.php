@@ -76,8 +76,8 @@ final class BookingsController extends Controller
         $playerId = $this->playerId($request);
         $past = ($request->query['scope'] ?? 'upcoming') === 'past';
         $sql = self::SELECT_BOOKING . ' WHERE b.player_id = :p AND '
-            . ($past ? "(b.ends_at < NOW() OR b.status IN ('cancelled','completed','no_show')) ORDER BY b.starts_at DESC"
-                     : "b.ends_at >= NOW() AND b.status IN ('pending','confirmed') ORDER BY b.starts_at ASC");
+            . ($past ? "(b.ends_at < NOW() OR b.status IN ('cancelled','no_show')) ORDER BY b.starts_at DESC"
+                     : "b.ends_at >= NOW() AND b.status IN ('pending','confirmed','completed') ORDER BY b.starts_at ASC");
         $stmt = $this->db->prepare($sql . ' LIMIT 50');
         $stmt->execute(['p' => $playerId]);
         $minHours = (int) $this->settings()['cancellation_min_hours'];
@@ -187,9 +187,11 @@ final class BookingsController extends Controller
 
     // ------------------------------------------------------------------ helpers
 
-    private const SELECT_BOOKING = 'SELECT b.*, f.name AS field_name,
-        (SELECT p.status FROM payments p WHERE p.booking_id = b.id ORDER BY p.id DESC LIMIT 1) AS payment_status
-        FROM bookings b JOIN fields f ON f.id = b.field_id';
+    // payment_status: the last receipt or approved payment (an online payment the player did not finish does not count).
+    private const SELECT_BOOKING = "SELECT b.*, f.name AS field_name,
+        (SELECT p.status FROM payments p WHERE p.booking_id = b.id AND NOT (p.method = 'wompi' AND p.status <> 'approved') ORDER BY p.id DESC LIMIT 1) AS payment_status,
+        (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.booking_id = b.id AND p.status = 'approved') AS paid_amount
+        FROM bookings b JOIN fields f ON f.id = b.field_id";
 
     /** Authorization by ownership: another player's booking is reported as not found. */
     private function ownedBooking(int $id, int $playerId): array
@@ -217,6 +219,7 @@ final class BookingsController extends Controller
             'totalAmount' => (int) $b['total_amount'],
             'depositAmount' => (int) $b['deposit_amount'],
             'paymentStatus' => $b['payment_status'],
+            'paidAmount' => (int) round((float) $b['paid_amount']),
             'canCancel' => BookingRules::canCancel($b['status'], new DateTimeImmutable($b['starts_at']), self::now(), $minHours),
             'createdAt' => self::iso($b['created_at']),
         ];
