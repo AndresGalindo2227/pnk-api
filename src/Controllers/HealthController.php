@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Pnk\Controllers;
 
 use Pnk\App;
+use Pnk\Payments\Wompi;
 use Pnk\Http\Request;
 use Pnk\Http\Response;
 
@@ -30,6 +31,7 @@ final class HealthController extends Controller
             'cancellationMinHours' => (int) $s['cancellation_min_hours'],
             'maxDaysAhead' => 30,
             'paymentAccounts' => $this->paymentAccounts(),
+            'onlinePayments' => (new Wompi($this->db, $this->config))->enabled(),
         ]);
     }
 

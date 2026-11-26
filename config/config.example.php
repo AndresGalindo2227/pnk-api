@@ -25,4 +25,11 @@ return [
     ],
     'min_app_version' => '0.1.0',
     'receipts_dir' => __DIR__ . '/../storage/receipts',
+    // Online payments (Wompi). The keys are written in InvFox (Configuración → Pagos en línea) and stored
+    // encrypted; pnk-api decrypts them with the same installation key: copy 'app' => ['key' => …] of the
+    // InvFox config/config.php here (64 hex characters). Never commit it.
+    'invfox_app_key' => '',
+    // Public address of this API (Cloudflare or ngrok). Wompi sends the player back to
+    // <public_url>/api/v1/payments/wompi/return after paying. Empty = Wompi shows its own result page.
+    'public_url' => '',
 ];
